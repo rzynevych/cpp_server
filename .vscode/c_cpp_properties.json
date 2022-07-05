@@ -1,0 +1,33 @@
+{
+    "env": {
+      "myDefaultIncludePath": ["${workspaceFolder}", "${workspaceFolder}/includes"],
+      "myCompilerPath": "C:\\Program Files\\mingw-w64\\x86_64-8.1.0-posix-seh-rt_v6-rev0\\mingw64\\bin\\"
+    },
+    "configurations": [
+      {
+        "name": "Win32",
+        "intelliSenseMode": "windows-gcc-x64",
+        "includePath": ["${myDefaultIncludePath}"],
+        "compilerPath": "C:\\Program Files\\mingw-w64\\x86_64-8.1.0-posix-seh-rt_v6-rev0\\mingw64\\bin\\g++.exe",
+        "cStandard": "c11",
+        "cppStandard": "c++17",
+        "browse": {
+          "path": ["${workspaceFolder}"],
+          "databaseFilename": ""
+        }
+      },
+      {
+        "name": "macos",
+        "intelliSenseMode": "clang-x64",
+        "includePath": ["${myDefaultIncludePath}"],
+        "compilerPath": "/usr/bin/g++",
+        "cStandard": "c11",
+        "cppStandard": "c++17",
+        "browse": {
+          "path": ["${workspaceFolder}"],
+          "databaseFilename": ""
+        }
+      }
+    ],
+    "version": 4
+  }
