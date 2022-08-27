@@ -18,23 +18,29 @@ int main()
         cerr << "Can't create a socket! Quitting" << endl;
         return -1;
     }
- 
+    cout << "Listening socket created" << endl;
     // Bind the ip address and port to a socket
     sockaddr_in hint;
     hint.sin_family = AF_INET;
     hint.sin_port = htons(54000);
     inet_pton(AF_INET, "0.0.0.0", &hint.sin_addr);
+
+    cout << "Port: " << hint.sin_port << endl;
  
-    bind(listening, (sockaddr*)&hint, sizeof(hint));
+    int bres = bind(listening, (sockaddr*)&hint, sizeof(hint));
  
+    cout << "Binded socket: " << bres << endl;
+
     // Tell Winsock the socket is for listening
     listen(listening, SOMAXCONN);
  
+    cout << "Listening started" << endl;
     // Wait for a connection
     sockaddr_in client;
     socklen_t clientSize = sizeof(client);
  
     int clientSocket = accept(listening, (sockaddr*)&client, &clientSize);
+    cout << "Accepted connection" << endl;
  
     char host[NI_MAXHOST];      // Client's remote name
     char service[NI_MAXSERV];   // Service (i.e. port) the client is connect on
@@ -76,14 +82,21 @@ int main()
             break;
         }
  
-        cout << string(buf, 0, bytesReceived) << endl;
+        string resp(buf, 0, bytesReceived);
+        cout << bytesReceived << " : " <<resp << endl;
+
+
+        if (resp.compare("exit\r\n") == 0)
+            break;
+        resp = "Received: " + resp;
  
         // Echo message back to client
-        send(clientSocket, buf, bytesReceived + 1, 0);
+        send(clientSocket, resp.c_str(), resp.size(), 0);
     }
  
     // Close the socket
     close(clientSocket);
+    cout << "Client socket closed" << endl;    
  
     return 0;
 }
