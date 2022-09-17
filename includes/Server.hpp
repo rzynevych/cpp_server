@@ -7,6 +7,9 @@
 # include <map>
 # include <set>
 # include <vector>
+# include <thread>
+# include <mutex>
+# include <atomic>
 
 # include <sys/types.h>
 # include <unistd.h>
@@ -27,12 +30,14 @@ private:
     int                                 fdCount = 0;
     uint16_t                            port;
     socket_t                            sock;
+    std::mutex                          mtx;
+    std::atomic_bool                    is_on = true;
 
 public:
     Server(uint16_t _port);
     ~Server();
 
-    void    acceptConnection();
+    void    waitConnections();
     void    pollSockets();
     int     addClient(socket_t socket);
     int     removeClient(socket_t socket);

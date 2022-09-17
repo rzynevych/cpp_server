@@ -29,7 +29,7 @@ Server::~Server()
     close(sock);
 }
 
-void    Server::acceptConnection()
+void    Server::waitConnections()
 {
     // Wait for a connection
     sockaddr_in client;
@@ -54,6 +54,7 @@ void    Server::acceptConnection()
         sprintf(service, "%d", ntohs(client.sin_port));
         std::cout << host << " connected on port " << ntohs(client.sin_port) << std::endl;
     }
+    std::lock_guard<std::mutex> guard(mtx);
     singleClients.emplace(sock, Client(sock, host, service));
     pollfd pfd;
     pfd.events = POLLIN;
@@ -63,5 +64,20 @@ void    Server::acceptConnection()
 
 void    Server::pollSockets()
 {
-    
+    while (is_on.load())
+    {
+        int size = pollfds.size();
+        int poll_response = poll(pollfds.data(), singleClients.size(), POLL_TIMEOUT);
+        if (poll_response < 0)
+        {
+            std::cerr << "Poll returned -1" << std::endl;
+            exit(1);
+        }
+        if (poll_response == 0)
+            continue ;
+        for (int i = 0; i < size; ++i)
+        {
+
+        }
+    }
 }
