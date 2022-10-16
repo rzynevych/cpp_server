@@ -9,17 +9,14 @@ class ClientsConnection
 private:
     Client  first;
     Client  second;
+
 public:
-    ClientsConnection(Client &client1, Client &client2);
-    ~ClientsConnection();
-};
-
-ClientsConnection::ClientsConnection(Client &client1, Client &client2) 
+    ClientsConnection(Client &client1, Client &client2) 
     : first(client1), second(client2)
-{}
-
-ClientsConnection::~ClientsConnection()
-{}
-
+    {}
+    ~ClientsConnection()
+    {}
+    
+};
 
 #endif

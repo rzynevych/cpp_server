@@ -3,7 +3,6 @@
 
 # include "server_common.hpp"
 # include "Client.hpp"
-# include "ClientsConnection.hpp"
 # include <map>
 # include <set>
 # include <vector>
@@ -23,26 +22,25 @@
 class Server
 {
 private:
-    std::map<int, Client>               singleClients;
-    std::map<int, ClientsConnection>    clientConnections;
+    std::map<int, Client>               allClients;
+    std::map<std::string, Client*>      namedClients;
     std::set<std::string>               clientNames;
     std::vector<pollfd>                 pollfds;
-    int                                 fdCount = 0;
-    uint16_t                            port;
-    socket_t                            sock;
+    uint16_t                            serverPort;
+    socket_t                            serverSocket;
     std::mutex                          mtx;
-    std::atomic_bool                    is_on = true;
+    std::atomic_int                     fdCount;
+    std::atomic_bool                    isOn;
+    char                                buff[4096];
 
 public:
-    Server(uint16_t _port);
+    Server(uint16_t port);
     ~Server();
 
     void    waitConnections();
     void    pollSockets();
-    int     addClient(socket_t socket);
     int     removeClient(socket_t socket);
-    int     nameClient(Client &client);
-    int     connectClients(Client &client1, Client &client2);
+    int     receiveData(Client &client);
 };
 
 
