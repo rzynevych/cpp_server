@@ -7,7 +7,7 @@ CC = clang++
 HEADER_DIR	=	includes/
 HEADER		=	includes/server_common.hpp \
 				includes/Server.hpp \
-				includes/Client.hpp
+				includes/SClient.hpp
 
 CFLAGS = -g -std=c++11 -I $(HEADER_DIR)
 

@@ -58,13 +58,39 @@ void    Server::waitConnections()
             sprintf(service, "%d", ntohs(client.sin_port));
             std::cout << host << " connected on port " << ntohs(client.sin_port) << std::endl;
         }
-        std::lock_guard<std::mutex> guard(mtx);
-        allClients.emplace(clientSocket, Client(clientSocket, host, service));
-        pollfd pfd;
-        pfd.fd = clientSocket;
-        pfd.events = POLLIN;
-        pollfds.emplace_back(pfd);
-        fdCount++;
+        memset(buff, 0, 4096);
+        int bytesReceived = recv(clientSocket, buff, BUFF_SIZE, 0);
+        std::cout << "Client name received" << std::endl;
+        if (bytesReceived == -1)
+        {
+            std::cout << "Cannot get response from server to set client name." << std::endl;
+            close(clientSocket);
+            continue ;
+        }
+        if (bytesReceived < 4)
+        {
+            std::cout << "Received client name is too short" << std::endl;
+            close(clientSocket);
+            continue ;
+        }
+        int sendRes = send(clientSocket, "ok", 2, 0);
+        if (sendRes == -1)
+        {
+            std::cout << "Could not send responce to server after setting name" << std::endl;
+            close(clientSocket);
+            continue ;
+        }
+        std::cout << "Responce has been sent" << std::endl;
+        {
+            std::lock_guard<std::mutex> guard(mtx);
+            allClients.emplace(clientSocket, SClient(clientSocket, host, service, buff));
+            namedClients.emplace(std::string(buff), &(allClients.at(clientSocket)));
+            pollfd pfd;
+            pfd.fd = clientSocket;
+            pfd.events = POLLIN;
+            pollfds.emplace_back(pfd);
+            fdCount++;
+        }
     }
 }
 
@@ -72,6 +98,7 @@ void    Server::pollSockets()
 {
     while (isOn.load())
     {
+        removeDisconnectedClients();
         int size = fdCount.load();
         int poll_response = poll(pollfds.data(), size, POLL_TIMEOUT);
         if (poll_response < 0)
@@ -84,37 +111,73 @@ void    Server::pollSockets()
         for (int i = 0; i < size; ++i)
         {
             if (pollfds[i].revents & POLLIN)
-            receiveData(allClients.at(pollfds[i].fd));
+            {
+                SClient *client;
+                {
+                    std::lock_guard<std::mutex> guard(mtx);
+                    client = &(allClients.at(pollfds[i].fd));
+                }
+                receiveData(client);
+            }
         }
     }
 }
 
-int     Server::receiveData(Client &client)
+void     Server::removeDisconnectedClients()
 {
-    memset(buff, 0, 4096);
-    int count = recv(client.getSocket(), buff, 4096, 0);
-    if (!client.isNamed())
-    {
-        std::string name(buff);
-        client.setName(name);
-        namedClients.emplace(name, &client);
-        std::cout << "Client named" << std::endl;
-    }
-    else if (!client.isConnected())
-    {
-        auto it = namedClients.find(buff);
-        if (it != namedClients.end())
+        std::lock_guard<std::mutex> guard(mtx);
+        std::set<int> rfds;  
+        for (int i = 0; i < pollfds.size(); ++i)
         {
-            client.connect(it->second);
-            it->second->connect(&client);
-            std::cout << "Clients connected" << std::endl;
+
+            if (allClients.at(pollfds[i].fd).isRemoved())
+                rfds.emplace(pollfds[i].fd);
+            namedClients.erase(allClients.at(pollfds[i].fd).getName());
+            allClients.erase(pollfds[i].fd);
         }
-    }
-    else
+        std::vector<pollfd>::iterator newEnd  = std::remove_if(pollfds.begin(), pollfds.end(), 
+            [rfds](pollfd pfd){ return rfds.find(pfd.fd) != rfds.end();});
+        pollfds.erase(newEnd, pollfds.end());
+        fdCount.store(pollfds.size());
+}
+
+
+int     Server::receiveData(SClient *client)
+{
+    memset(buff, 0, BUFF_SIZE);
+    int count = recv(client->getSocket(), buff, 4096, 0);
+    int targNameLength = buff[0];
+    if (count == 0)
     {
-        socket_t sock = client.getConnected()->getSocket();
-        send(sock, buff, count, 0);
-        std::cout << "Message sent" << std::endl;
+        close(client->getSocket());
+        client->remove();
+        return 0;
     }
+
+    if (targNameLength < 0)
+    {
+        std::cout << "Received invalid data: name length < 0" << std::endl;
+        return -1;
+    }
+    std::string targetName(buff + 1, buff[0]);
+    socket_t targetSock;
+    {
+        std::lock_guard<std::mutex> guard(mtx);
+        auto it = namedClients.find(targetName);
+        if (it == namedClients.end())
+        {
+            std::cout << "Target client doesn't exist" << std::endl;
+            return -1;
+        }
+        targetSock = it->second->getSocket();
+    }
+    memset(outbuff, 0, BUFF_SIZE);
+    outbuff[0] = client->getName().length();
+    const char *clientName = client->getName().c_str();
+    int nameLength = client->getName().length();
+    std::copy(clientName, clientName + nameLength, outbuff + 1);
+    std::copy(buff + targNameLength + 1, buff + count, outbuff + nameLength + 1);
+    send(targetSock, outbuff , count - targNameLength + nameLength, 0);
+    std::cout << "Message sent" << std::endl;
     return 0;
 }
