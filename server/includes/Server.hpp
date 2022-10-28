@@ -46,6 +46,10 @@ public:
     int     removeClient(socket_t socket);
     int     receiveData(SClient *client);
     void    removeDisconnectedClients();
+
+private:
+    void    abortClient(socket_t clientSocket, std::string message);
+
 };
 
 

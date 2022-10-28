@@ -1,9 +1,13 @@
 NAME = client.exe
-SRC =	src/main.cpp
+SRC =	src/main.cpp \
+		src/Client.cpp
 
 CC = clang++
 HEADER_DIR	=	includes/
-HEADER		=	includes/client_common.hpp 
+HEADER		=	includes/client_common.hpp \
+				includes/Client.hpp \
+				includes/Writer.hpp
+
 
 CFLAGS = -g -std=c++11 -I $(HEADER_DIR)
 

@@ -20,7 +20,7 @@
         "name": "linux",
         "intelliSenseMode": "clang-x64",
         "includePath": ["${myDefaultIncludePath}"],
-        "compilerPath": "/usr/bin/g++",
+        "compilerPath": "/usr/bin/clang++",
         "cStandard": "c11",
         "cppStandard": "c++17",
         "browse": {

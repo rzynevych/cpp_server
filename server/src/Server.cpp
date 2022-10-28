@@ -63,21 +63,18 @@ void    Server::waitConnections()
         std::cout << "Client name received" << std::endl;
         if (bytesReceived == -1)
         {
-            std::cout << "Cannot get response from server to set client name." << std::endl;
-            close(clientSocket);
+            abortClient(clientSocket, "Cannot get response from server to set client name.");
             continue ;
         }
         if (bytesReceived < 4)
         {
-            std::cout << "Received client name is too short" << std::endl;
-            close(clientSocket);
+            abortClient(clientSocket, "Received client name is too short");
             continue ;
         }
         int sendRes = send(clientSocket, "ok", 2, 0);
         if (sendRes == -1)
         {
-            std::cout << "Could not send responce to server after setting name" << std::endl;
-            close(clientSocket);
+            abortClient(clientSocket, "Could not send responce to server after setting name");
             continue ;
         }
         std::cout << "Responce has been sent" << std::endl;
@@ -92,6 +89,12 @@ void    Server::waitConnections()
             fdCount++;
         }
     }
+}
+
+void    Server::abortClient(socket_t clientSocket, std::string message)
+{
+    close(clientSocket);
+    std::cout << message << std::endl;
 }
 
 void    Server::pollSockets()
@@ -125,20 +128,21 @@ void    Server::pollSockets()
 
 void     Server::removeDisconnectedClients()
 {
-        std::lock_guard<std::mutex> guard(mtx);
-        std::set<int> rfds;  
-        for (int i = 0; i < pollfds.size(); ++i)
+    std::lock_guard<std::mutex> guard(mtx);
+    std::set<int> rfds;  
+    for (int i = 0; i < pollfds.size(); ++i)
+    {
+        if (allClients.at(pollfds[i].fd).isRemoved())
         {
-
-            if (allClients.at(pollfds[i].fd).isRemoved())
-                rfds.emplace(pollfds[i].fd);
+            rfds.emplace(pollfds[i].fd);
             namedClients.erase(allClients.at(pollfds[i].fd).getName());
             allClients.erase(pollfds[i].fd);
         }
-        std::vector<pollfd>::iterator newEnd  = std::remove_if(pollfds.begin(), pollfds.end(), 
-            [rfds](pollfd pfd){ return rfds.find(pfd.fd) != rfds.end();});
-        pollfds.erase(newEnd, pollfds.end());
-        fdCount.store(pollfds.size());
+    }
+    std::vector<pollfd>::iterator newEnd  = std::remove_if(pollfds.begin(), pollfds.end(), 
+        [rfds](pollfd pfd){ return rfds.find(pfd.fd) != rfds.end();});
+    pollfds.erase(newEnd, pollfds.end());
+    fdCount.store(pollfds.size());
 }
 
 

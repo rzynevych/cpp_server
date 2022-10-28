@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+    {
+      "name": "C++ Launch",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/server/server.exe",
+      "stopAtEntry": false,
+      "launchCompleteCommand": "exec-run",
+      "cwd": "${workspaceFolder}",
+      "windows": {
+        "MIMode": "lldb",
+        "miDebuggerPath": "/usr/bin/lldb"
+      }
+    }
+  ]
+}
