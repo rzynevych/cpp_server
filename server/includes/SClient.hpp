@@ -2,19 +2,22 @@
 # define CLIENTS_HPP
 
 # include "server_common.hpp"
+# include <boost/asio.hpp>
+
+using namespace boost::asio;
+using namespace boost::asio::ip;
 
 class SClient
 {
 private:
-    socket_t    sock;
-    std::string name;
-    std::string host;
-    std::string port;
-    bool        removed = false;
+    tcp::socket     sock;
+	streambuf       buff; // reads the answer from the client
+    std::string     name;
+    bool            removed = false;
 
 public:
-    SClient(socket_t sock, char *host, char *port, char *name) 
-    : sock(sock), host(host), port(port), name(name) {}
+    SClient(io_service &s) 
+    : sock(s), name(name) {}
     ~SClient() {}
     
     const std::string   &getName()
@@ -22,17 +25,22 @@ public:
         return name;
     }
 
-    void        remove()
+    void            remove()
     {
         removed = true;
     }
 
-    bool        isRemoved()
+    bool            isRemoved()
     {
         return removed;
     }
+
+    streambuf       &getBuff()
+    {
+        return buff;
+    }
     
-    socket_t    getSocket()
+    tcp::socket     &getSocket()
     {
         return sock;
     }

@@ -1,11 +1,13 @@
 #include "Server.hpp"
 
+
 int main()
 {
-    Server server(8080);
-    std::thread waitThread(&Server::waitConnections, &server);
-    std::thread pollThread(&Server::pollSockets, &server);
-    waitThread.join();
-    pollThread.join();
+    io_service service;
+    Server server(service, 8080);
+    std::thread ioThread(
+        static_cast<io_context::count_type (io_service::*)(void)>(&io_service::run),
+        &service);
+    ioThread.join();
     return 0;
 }

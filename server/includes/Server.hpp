@@ -3,55 +3,50 @@
 
 # include "server_common.hpp"
 # include "SClient.hpp"
+
+# include <boost/asio.hpp>
+# include <boost/bind.hpp>
+
+# include <string>
+# include <iostream>
+# include <memory>
+# include <thread>
 # include <map>
 # include <set>
 # include <vector>
-# include <thread>
-# include <mutex>
-# include <atomic>
-# include <algorithm>
 
-# include <sys/types.h>
-# include <unistd.h>
-# include <sys/socket.h>
-# include <netdb.h>
-# include <arpa/inet.h>
-# include <string.h>
-# include <string>
-# include <poll.h>
+using namespace boost::asio;
+using namespace boost::asio::ip;
 
 # define BUFF_SIZE 4096
 
 class Server
 {
 private:
-    std::map<int, SClient>              allClients;
-    std::map<std::string, SClient*>     namedClients;
-    std::set<std::string>               clientNames;
-    std::vector<pollfd>                 pollfds;
-    uint16_t                            serverPort;
-    socket_t                            serverSocket;
-    std::mutex                          mtx;
-    std::atomic_int                     fdCount;
-    std::atomic_bool                    isOn;
-    char                                buff[4096];
-    char                                outbuff[4096];
+    io_service                                      &service;
+    tcp::socket                                     sock;
+    tcp::endpoint                                   tcpEndpoint;
+    tcp::acceptor                                   tcpAcceptor;
+    std::set<std::string>                           client_names;
+    std::set<std::shared_ptr<SClient>>              allClients;
+    std::map<std::string, std::shared_ptr<SClient>> named_clients;
+    uint16_t                                        server_port;
 
 public:
-    Server(uint16_t port);
+    Server(io_service &service, uint16_t port);
     ~Server();
 
-    void    waitConnections();
-    void    pollSockets();
-    int     removeClient(socket_t socket);
-    int     receiveData(SClient *client);
+    void    acceptHandler(std::shared_ptr<SClient> client, 
+                            const boost::system::error_code &ec);
+    void    onRead(std::shared_ptr<SClient> client, 
+                    const boost::system::error_code & err, size_t read_bytes); 
+    void    onWrite(const boost::system::error_code & err, size_t n);
+    int     remove_client();
     void    removeDisconnectedClients();
 
 private:
-    void    abortClient(socket_t clientSocket, std::string message);
+    void    abortClient(std::string message);
 
 };
-
-
 
 #endif
