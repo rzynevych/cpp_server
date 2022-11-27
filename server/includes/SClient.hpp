@@ -25,6 +25,11 @@ public:
         return name;
     }
 
+    void            setName(const std::string &_name)
+    {
+        name = _name;
+    }
+
     void            remove()
     {
         removed = true;

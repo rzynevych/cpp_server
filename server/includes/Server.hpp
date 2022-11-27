@@ -27,13 +27,11 @@ private:
     tcp::socket                                     sock;
     tcp::endpoint                                   tcpEndpoint;
     tcp::acceptor                                   tcpAcceptor;
-    std::set<std::string>                           client_names;
     std::set<std::shared_ptr<SClient>>              allClients;
-    std::map<std::string, std::shared_ptr<SClient>> named_clients;
-    uint16_t                                        server_port;
+    std::map<std::string, std::shared_ptr<SClient>> namedClients;
 
 public:
-    Server(io_service &service, uint16_t port);
+    Server(io_service &service, tcp::endpoint &tcpEndpoint);
     ~Server();
 
     void    acceptHandler(std::shared_ptr<SClient> client, 
@@ -41,6 +39,8 @@ public:
     void    onRead(std::shared_ptr<SClient> client, 
                     const boost::system::error_code & err, size_t read_bytes); 
     void    onWrite(const boost::system::error_code & err, size_t n);
+    void    getClientName(const std::shared_ptr<SClient> &client,
+                    const boost::system::error_code & err, size_t read_bytes);
     int     remove_client();
     void    removeDisconnectedClients();
 

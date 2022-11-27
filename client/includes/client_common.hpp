@@ -4,8 +4,4 @@
 # include <cstdio>
 # include <iostream>
 
-# define POLL_TIMEOUT 20
-
-typedef int socket_t;
-
 #endif

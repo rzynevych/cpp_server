@@ -9,37 +9,33 @@
 # include <atomic> 
 # include <thread>
 
-# include <sys/types.h>
-# include <unistd.h>
-# include <sys/socket.h>
-# include <netdb.h>
-# include <arpa/inet.h>
-# include <string.h>
-# include <string>
+# include <boost/asio.hpp>
+# include <boost/bind.hpp>
 
-# include <poll.h>
-
-#define BUFF_SIZE 4096
+using namespace boost::asio;
+using namespace boost::asio::ip;
 
 class Client
 {
 private:
-    socket_t            sock;
-    std::string         ipAddress;
-    int                 port;
+    io_service          &service;
+    tcp::endpoint       &ep;
+    tcp::socket         sock;
+	streambuf           inbuff;
+    streambuf           outbuff;
     std::string         name;
     std::string         targetName;
     std::string         input;
     std::atomic_bool    haveInput;
     std::atomic_bool    isOn;
     Writer              writer;
-    char                buff[BUFF_SIZE];
-    char                outbuff[BUFF_SIZE];
 
 public:
-    Client(std::string ipAddress, int port);
+    Client(io_service &service, tcp::endpoint &ep);
     ~Client() {}
 
+    void    onRead(const boost::system::error_code & err, size_t read_bytes);
+    void    onWrite(const boost::system::error_code & err, size_t n);
     void    pollSocket();
     void    handleInput();
     void    handleData();
