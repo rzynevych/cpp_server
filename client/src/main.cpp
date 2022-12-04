@@ -2,11 +2,9 @@
 
 int main()
 {
-    Client *client = new Client("localhost", 8080);
-    std::thread pollThread(&Client::pollSocket, client);
-    std::thread inputThread(&Client::waitInput, client);
-    pollThread.join();
-    inputThread.join();
-    delete client;
+    io_service service;
+    tcp::endpoint ep{tcp::v4(), 8080};
+    Client client(service, ep);
+    service.run();
     return 0;
 }

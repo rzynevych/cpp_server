@@ -29,6 +29,7 @@ private:
     tcp::acceptor                                   tcpAcceptor;
     std::set<std::shared_ptr<SClient>>              allClients;
     std::map<std::string, std::shared_ptr<SClient>> namedClients;
+    streambuf                                       outbuff;
 
 public:
     Server(io_service &service, tcp::endpoint &tcpEndpoint);
@@ -41,12 +42,6 @@ public:
     void    onWrite(const boost::system::error_code & err, size_t n);
     void    getClientName(const std::shared_ptr<SClient> &client,
                     const boost::system::error_code & err, size_t read_bytes);
-    int     remove_client();
-    void    removeDisconnectedClients();
-
-private:
-    void    abortClient(std::string message);
-
 };
 
 #endif

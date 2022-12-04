@@ -38,7 +38,6 @@ public:
     void    onWrite(const boost::system::error_code & err, size_t n);
     void    pollSocket();
     void    handleInput();
-    void    handleData();
     void    handleCommand();
     void    waitInput();
     void    putMessage(std::string msg);

@@ -10,28 +10,34 @@ Client::Client(io_service &service, tcp::endpoint &ep) :
     // Get name
     writer.println("Enter your name:");
     std::getline(std::cin, name);
-    writer.println("Your name is: ");
     outbuff.sputc(name.length());
-    outbuff.sputn(name.c_str(), name.length());
-    sock.write_some(outbuff);
+    outbuff.sputn(name.c_str(), name.length() + 1);
+    sock.write_some(outbuff.data());
+    outbuff.consume(outbuff.size());
+    writer.println("Your name is: " + name);
+    writer.printe(name + ": ");
     std::thread inputThread(&Client::waitInput, this);
     inputThread.detach();
     async_read_until(sock, inbuff, 0, boost::bind(&Client::onRead, this, _1, _2));
 }
 
-void    Client::handleData()
+void    Client::onRead(const boost::system::error_code & err, size_t read_bytes)
 {
-    char *data;
+    char *data = (char *) inbuff.data().data();
     int nameLength = data[0];
-    int messageLength = data[nameLength + 1];
-    if (nameLength < 0)
-    {
-        writer.println("Received invalid data: name length < 0");
-        return ;
-    }
     std::string senderName(data + 1, nameLength);
+    int messageLength = data[nameLength + 1];
+    std::string message(data + nameLength + 2, messageLength);
+    inbuff.consume(read_bytes);
     putMessage(senderName + ": \n" 
         + std::string(data + nameLength + 1, messageLength));
+    if (isOn.load())
+        async_read_until(sock, inbuff, 0, boost::bind(&Client::onRead, this, _1, _2));
+}
+
+void    Client::onWrite(const boost::system::error_code & err, size_t n)
+{
+    outbuff.consume(outbuff.size());
 }
 
 void    Client::handleInput()
@@ -40,22 +46,20 @@ void    Client::handleInput()
     if (input[0] == '/')
     {
         handleCommand();
-        haveInput.store(false);
         return ;
     }
     if (targetName.length() == 0)
     {
         putMessage("Target client or room isn't set");
-        haveInput.store(false);
         return ;
     }
     outbuff.sputc(targetName.length());
     outbuff.sputn(targetName.c_str(), targetName.length());
-    outbuff.sputn(input.c_str(), input.length() + 1);
-    sock.async_write_some(outbuff, boost::bind(&Client::onWrite, this, _1, _2));
+    outbuff.sputn(input.c_str(), input.length());
+    outbuff.sputc(0);
+    sock.async_write_some(outbuff.data(), boost::bind(&Client::onWrite, this, _1, _2));
     writer.println("------------------------------");
     writer.printe(name + ": ");
-    haveInput.store(false);
 }
 
 void    Client::handleCommand()
@@ -84,7 +88,6 @@ void    Client::handleCommand()
     if (parts[0].compare("/exit") == 0)
     {
         isOn.store(false);
-        writer.println("Exiting...");
         return ;
     }
     putMessage("Unknown command: " + input);
@@ -100,6 +103,10 @@ void    Client::waitInput()
         input = tmp;
         handleInput();
     }
+    sock.shutdown(socket_base::shutdown_both);
+    sock.close();
+    service.stop();
+    writer.println("Exiting...");
 }
 
 void    Client::die(std::string message)

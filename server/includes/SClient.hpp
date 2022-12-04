@@ -17,7 +17,7 @@ private:
 
 public:
     SClient(io_service &s) 
-    : sock(s), name(name) {}
+    : sock(s) {}
     ~SClient() {}
     
     const std::string   &getName()
