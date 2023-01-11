@@ -1,10 +1,15 @@
 #include "Client.hpp"
+#include <boost/exception/exception.hpp>
 
 Client::Client(io_service &service, tcp::endpoint &ep) : 
     service(service), ep(ep), sock(service), writer(std::cout)
 {
     isOn.store(true);
-    sock.connect(ep);
+    try {
+        sock.connect(ep);
+    } catch (boost::system::system_error &ex) {
+        std::cout << ex.what();
+    }
     writer.println("Connected to server");
 
     // Get name
@@ -18,7 +23,8 @@ Client::Client(io_service &service, tcp::endpoint &ep) :
     writer.printe(name + ": ");
     std::thread inputThread(&Client::waitInput, this);
     inputThread.detach();
-    async_read_until(sock, inbuff, 0, boost::bind(&Client::onRead, this, _1, _2));
+    async_read_until(sock, inbuff, 0, boost::bind(&Client::onRead, this, 
+                    boost::placeholders::_1, boost::placeholders::_2));
 }
 
 void    Client::onRead(const boost::system::error_code & err, size_t read_bytes)
@@ -29,10 +35,11 @@ void    Client::onRead(const boost::system::error_code & err, size_t read_bytes)
     int messageLength = data[nameLength + 1];
     std::string message(data + nameLength + 2, messageLength);
     inbuff.consume(read_bytes);
-    putMessage(senderName + ": \n" 
+    putMessage(senderName + ": " 
         + std::string(data + nameLength + 1, messageLength));
     if (isOn.load())
-        async_read_until(sock, inbuff, 0, boost::bind(&Client::onRead, this, _1, _2));
+        async_read_until(sock, inbuff, 0, boost::bind(&Client::onRead, this, 
+                    boost::placeholders::_1, boost::placeholders::_2));
 }
 
 void    Client::onWrite(const boost::system::error_code & err, size_t n)
@@ -57,7 +64,8 @@ void    Client::handleInput()
     outbuff.sputn(targetName.c_str(), targetName.length());
     outbuff.sputn(input.c_str(), input.length());
     outbuff.sputc(0);
-    sock.async_write_some(outbuff.data(), boost::bind(&Client::onWrite, this, _1, _2));
+    sock.async_write_some(outbuff.data(), boost::bind(&Client::onWrite, this, 
+                boost::placeholders::_1, boost::placeholders::_2));
     writer.println("------------------------------");
     writer.printe(name + ": ");
 }

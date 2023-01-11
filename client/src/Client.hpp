@@ -10,7 +10,7 @@
 # include <thread>
 
 # include <boost/asio.hpp>
-# include <boost/bind.hpp>
+# include <boost/bind/bind.hpp>
 
 using namespace boost::asio;
 using namespace boost::asio::ip;

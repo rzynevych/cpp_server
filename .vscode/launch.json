@@ -5,14 +5,12 @@
       "name": "C++ Launch",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/server/server.exe",
+      "program": "${workspaceFolder}/client/client.exe",
       "stopAtEntry": false,
       "launchCompleteCommand": "exec-run",
       "cwd": "${workspaceFolder}",
-      "windows": {
-        "MIMode": "lldb",
-        "miDebuggerPath": "/usr/bin/lldb"
-      }
+      "MIMode": "gdb",
+      "miDebuggerPath": "C:\\mingw64\\bin\\gdb.exe"
     }
   ]
 }

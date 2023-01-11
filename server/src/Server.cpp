@@ -7,7 +7,7 @@ Server::Server(io_service &service, tcp::endpoint &tcpEndpoint) :
     tcpAcceptor.listen();
     auto newClient = allClients.emplace(std::make_shared<SClient>(service)).first.operator*();
     tcpAcceptor.async_accept(newClient->getSocket(), 
-        boost::bind(&Server::acceptHandler, this, newClient, _1));
+        boost::bind(&Server::acceptHandler, this, newClient, boost::placeholders::_1));
     std::cout << "Server started" << std::endl;
 }
 
@@ -23,9 +23,10 @@ void    Server::acceptHandler(std::shared_ptr<SClient> client,
     if (!ec)
     {
         async_read_until(client->getSocket(), client->getBuff(), 0,
-                    boost::bind(&Server::getClientName, this, client, _1, _2));
+            boost::bind(&Server::getClientName, this, client, boost::placeholders::_1, boost::placeholders::_2));
         auto newClient = allClients.emplace(std::make_shared<SClient>(service)).first.operator*();
-        tcpAcceptor.async_accept(newClient->getSocket(), boost::bind(&Server::acceptHandler, this, newClient, _1));
+        tcpAcceptor.async_accept(newClient->getSocket(), 
+            boost::bind(&Server::acceptHandler, this, newClient, boost::placeholders::_1));
     }
     else
     {
@@ -56,11 +57,13 @@ void        Server::onRead(std::shared_ptr<SClient> client,
             outbuff.sputc(client->getName().length());
             outbuff.sputn(client->getName().c_str(), targetName.length());
             outbuff.sputn(message.c_str(), message.length() + 1);
-            it->second->getSocket().async_write_some(outbuff.data(), boost::bind(&Server::onWrite, this, _1, _2));
+            it->second->getSocket().async_write_some(outbuff.data(), 
+                boost::bind(&Server::onWrite, this, boost::placeholders::_1, boost::placeholders::_2));
         }
         client->getBuff().consume(client->getBuff().size());
         // now, wait for the next read from the same client
-        async_read_until(client->getSocket(), client->getBuff(), 0, boost::bind(&Server::onRead, this, client, _1, _2));
+        async_read_until(client->getSocket(), client->getBuff(), 0, 
+            boost::bind(&Server::onRead, this, client, boost::placeholders::_1, boost::placeholders::_2));
     }
     else if (err == error::eof || err == error::connection_reset)
     {
@@ -92,5 +95,5 @@ void        Server::getClientName(const std::shared_ptr<SClient> &client,
     namedClients.emplace(clientName, client);
     client->getBuff().consume(client->getBuff().size());
     async_read_until(client->getSocket(), client->getBuff(), 0, 
-                boost::bind(&Server::onRead, this, client, _1, _2));
+        boost::bind(&Server::onRead, this, client, boost::placeholders::_1, boost::placeholders::_2));
 }

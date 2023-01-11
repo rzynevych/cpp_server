@@ -3,7 +3,7 @@
 int main()
 {
     io_service service;
-    tcp::endpoint ep{tcp::v4(), 8080};
+    tcp::endpoint ep{ip::address::from_string("127.0.0.1"), 8080};
     Client client(service, ep);
     service.run();
     return 0;
