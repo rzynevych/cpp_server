@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.0)
 
 project(cpp_server)
 
@@ -26,9 +26,13 @@ add_executable(${CLIENT_EXECUTABLE_NAME}
 	client/src/main.cpp 
 )
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	target_link_libraries(${SERVER_EXECUTABLE_NAME} pthread)
+	target_link_libraries(${CLIENT_EXECUTABLE_NAME} pthread)
+endif()
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 	include_directories("${Boost_INCLUDE_DIRS}")
 	target_link_libraries(${SERVER_EXECUTABLE_NAME} wsock32 ws2_32)
 	target_link_libraries(${CLIENT_EXECUTABLE_NAME} wsock32 ws2_32)
 endif()
-
